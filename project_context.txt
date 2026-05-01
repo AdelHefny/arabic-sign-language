@@ -1,0 +1,31 @@
+Here is a complete architectural summary of your "Large" 20M-parameter Temporal Transformer pipeline, mapped directly to how data flows through the system:
+
+### 1. Preprocessing
+Before the data ever reaches the model's neural layers, it goes through two highly optimized preprocessing stages:
+*   **Feature Extraction (Stage 1):** You use the `process_single_video` function, powered by the **MediaPipe HandLandmarker Tasks API**. This script extracts 126 spatial coordinates per frame, aggressively skips alternate frames to reduce computational load (effectively converting 30 FPS to 15 FPS), and saves the physical hand boundaries as lightweight `.npy` arrays.
+*   **Training Loader (Stage 2):** During training, your data pipeline uses the **`parse_tfrecord_fn`**. This function decodes the optimized TFRecord files, reconstructs the dense tensors from flattened byte strings, casts the dynamic sequence lengths, and applies one-hot encoding to the labels, allowing TensorFlow to stream data directly into the GPU memory via C++.
+
+---
+
+### 2. Input
+*   **Tensor Shape:** `(Batch_Size, Sequence_Length, 126)`
+*   **Description:** The model receives a 3D tensor. The first dimension is the batch. The second is the temporal dimension (the number of video frames, which is capped at a fixed `WINDOW_SIZE` of 30 during real-time inference). The final dimension contains the 126 raw spatial coordinates of the user's hands for that specific frame.
+
+---
+
+### 3. Computation (The Temporal Transformer)
+Once the coordinates are ingested, the model performs the following sequence of operations to understand the gesture over time:
+*   **Masking & Projection:** A `Masking` layer ignores any trailing zero-padded frames. A `Dense` layer then projects the raw 126 coordinates into a wider 512-dimensional embedding space (`d_model`).
+*   **Time Injection:** Because attention mechanisms process all data simultaneously, your custom **`PositionalEncoding`** layer adds sequential markers to the embeddings so the model knows which frames happened first, middle, and last.
+*   **Deep Feature Extraction (6 Stacked Layers):** The data flows through 6 consecutive Transformer blocks. Inside each block:
+    *   **Multi-Head Attention:** 8 parallel attention heads compare every frame against every other frame to map out the temporal motion of the sign.
+    *   **Feed-Forward Network:** The signals are expanded to 2048 dimensions (`ff_dim`) to learn complex, non-linear representations, then compressed back down.
+    *   **Stabilization:** Residual connections (`Add`), `LayerNormalization`, and internal `Dropout` are applied constantly to keep the gradients flowing smoothly across the 20 million parameters without overfitting.
+*   **Temporal Pooling:** A `GlobalAveragePooling1D` layer crushes the time dimension, averaging the rich features extracted across the 30 frames into a single, dense vector representation of the entire video clip.
+
+---
+
+### 4. Output
+*   **Tensor Shape:** `(Batch_Size, 502)`
+*   **Activation:** `Softmax`
+*   **Description:** The final vector passes through a standard dense classification head. The softmax activation function converts the raw logits into a clean probability distribution spanning exactly 100%. The highest percentage among the 502 output nodes dictates the predicted Arabic Sign Language word.
