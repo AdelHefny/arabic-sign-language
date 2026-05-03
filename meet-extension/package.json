@@ -1,0 +1,55 @@
+{
+  "name": "meet-asl-translator",
+  "displayName": "Meet ASL Translator",
+  "version": "0.0.1",
+  "description": "ASL Translator for Google Meet using MediaPipe and Fingerpose",
+  "author": "Antigravity",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build",
+    "package": "plasmo package"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "latest",
+    "@plasmohq/messaging": "^0.7.2",
+    "onnxruntime-node": "^1.25.1",
+    "onnxruntime-web": "^1.25.1",
+    "plasmo": "latest",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "latest",
+    "@types/chrome": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "prettier": "latest",
+    "typescript": "latest"
+  },
+  "manifest": {
+    "host_permissions": [
+      "https://meet.google.com/*"
+    ],
+    "permissions": [
+      "offscreen"
+    ],
+    "web_accessible_resources": [
+      {
+        "resources": [
+          "assets/ort-wasm/*",
+          "assets/*.onnx",
+          "assets/*.json",
+          "assets/tasks-vision-wasm/*",
+          "assets/*.task"
+        ],
+        "matches": [
+          "<all_urls>"
+        ]
+      }
+    ],
+    "content_security_policy": {
+      "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+    }
+  }
+}
