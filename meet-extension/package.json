@@ -3,7 +3,7 @@
   "displayName": "Meet ASL Translator",
   "version": "0.0.1",
   "description": "ASL Translator for Google Meet using MediaPipe and Fingerpose",
-  "author": "Antigravity",
+  "author": "Adel Hefny",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",

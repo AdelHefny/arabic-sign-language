@@ -89,18 +89,28 @@ const StatusBadge = ({ status, detail, bufferProgress, bufferSize }: {
 // --- Main video overlay per participant ---
 const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
   const captureCanvasRef = useRef<HTMLCanvasElement>(null)
-  const [prediction, setPrediction] = useState("")
+  const [captions, setCaptions] = useState<string[]>([])
   const [status, setStatus] = useState<AppStatus>("loading")
   const [statusDetail, setStatusDetail] = useState("Initializing...")
   const [bufferProgress, setBufferProgress] = useState(0)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const wordLimitRef = useRef(Math.floor(Math.random() * 5) + 6) // Random between 6 and 10
   const BUFFER_SIZE = 30
   const participantId = useRef(Math.random().toString(36).slice(2)).current
 
   const updatePrediction = (text: string) => {
-    setPrediction(text)
+    setCaptions(prev => {
+      const newCaptions = [...prev, text]
+      if (newCaptions.length > wordLimitRef.current) {
+        return newCaptions.slice(newCaptions.length - wordLimitRef.current)
+      }
+      return newCaptions
+    })
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    timeoutRef.current = setTimeout(() => setPrediction(""), 3000)
+    timeoutRef.current = setTimeout(() => {
+      setCaptions([])
+      wordLimitRef.current = Math.floor(Math.random() * 5) + 6
+    }, 5000)
   }
 
   useEffect(() => {
@@ -120,51 +130,61 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
         return
       }
 
-      captureCanvas.width = 320
-      captureCanvas.height = Math.round(320 * (video.videoHeight / video.videoWidth))
+      // Reduce resolution for performance. MediaPipe doesn't need 640x480 for detection.
+      // 320x240 is 4x less data and still very accurate for landmarks.
+      if (captureCanvas.width !== 320) {
+        captureCanvas.width = 320
+        captureCanvas.height = 240
+      }
 
       try {
-        captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height)
-        const imageData = captureCtx.getImageData(0, 0, captureCanvas.width, captureCanvas.height)
+        captureCtx.drawImage(video, 0, 0, 320, 240)
+        
+        // Use JPEG string instead of raw array. 
+        // Array.from() + JSON serialization of 1.2M elements was the bottleneck.
+        // A 320x240 JPEG is ~15KB vs ~1MB for a JSON array.
+        const dataUrl = captureCanvas.toDataURL("image/jpeg", 0.7)
 
-        sendToBackground({
-          name: "process_frame",
-          body: {
-            participantId,
-            imageData: {
-              data: Array.from(imageData.data),
-              width: imageData.width,
-              height: imageData.height
+        try {
+          const response = await sendToBackground({
+            name: "process_frame",
+            body: {
+              participantId,
+              dataUrl,
+              width: 320,
+              height: 240
             }
-          }
-        }).then((response: any) => {
-          if (!active || !response) return
+          })
 
-          // Canvas clearing removed as visible canvas is gone
+          if (!active) return
+
+          if (!response) {
+            setTimeout(processFrame, 100)
+            return
+          }
 
           // --- Update UI state based on response ---
           if (response.status === "loading") {
             setStatus("loading")
             setStatusDetail("Loading model...")
+            setTimeout(processFrame, 200)
             return
           }
 
           if (response.error) {
             setStatus("error")
             setStatusDetail(response.error)
+            setTimeout(processFrame, 500)
             return
           }
 
-          if (response.landmarks) {
-            // Landmarks drawing removed as requested
-          }
 
           const progress = response.bufferProgress ?? 0
           setBufferProgress(progress)
 
           if (!response.handsDetected) {
             setStatus("no_hands")
-          } else if (progress < BUFFER_SIZE) {
+          } else if (progress < BUFFER_SIZE && status !== "ready") {
             setStatus("buffering")
           } else {
             setStatus("ready")
@@ -172,25 +192,29 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
           }
 
           if (response.gesture) {
-            console.log("[ASL] Prediction:", response.gesture)
             updatePrediction(response.gesture)
-          } else if (response.handsDetected) {
-            // Log every ~2 seconds to avoid spamming if no prediction
-            if (Math.random() < 0.05) console.log("[ASL] Tracking hands, awaiting prediction window...")
           }
-        })
+
+          // Target ~30 FPS for smoother visual tracking
+          setTimeout(processFrame, 33)
+        } catch (ipcErr: any) {
+          if (!active) return
+          console.error("[ASL] sendToBackground error:", ipcErr)
+          setTimeout(processFrame, 500)
+        }
       } catch (e) {
         console.error("Capture error:", e)
         setStatus("error")
         setStatusDetail("Capture failed")
+        setTimeout(processFrame, 1000)
       }
-
-      setTimeout(processFrame, 66)
     }
 
     processFrame()
     return () => { active = false }
   }, [video])
+
+  const rect = video.getBoundingClientRect()
 
   return (
     <div style={{
@@ -203,40 +227,32 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
       zIndex: 2147483647
     }}>
       {/* Canvas removed as requested */}
+      {/* Status Badge Removed as requested */}
 
-      {/* Status Badge */}
-      <StatusBadge
-        status={status}
-        detail={statusDetail}
-        bufferProgress={bufferProgress}
-        bufferSize={BUFFER_SIZE}
-      />
-
-      {/* Prediction Result */}
-      {status === "ready" && (
+      {/* Prediction Result - Movie Captions Style */}
+      {captions.length > 0 && (
         <div style={{
           position: "absolute",
-          top: "40px", // Higher and sleeker
+          bottom: "10%",
           left: "50%",
           transform: "translateX(-50%)",
-          background: "rgba(10, 10, 15, 0.95)",
-          color: "#00f2ff",
-          padding: "8px 20px",
+          background: "rgba(0, 0, 0, 0.75)",
+          color: "#f8f9fa",
+          padding: "16px 32px",
           borderRadius: "12px",
-          fontSize: "22px", // Smaller, professional size
+          fontSize: "32px",
           fontFamily: "system-ui, -apple-system, sans-serif",
-          fontWeight: "600",
-          border: "1px solid rgba(0, 242, 255, 0.5)",
-          boxShadow: "0 4px 15px rgba(0, 0, 0, 0.5)",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
+          fontWeight: "700",
+          textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)",
           zIndex: 2147483647,
           direction: "rtl",
-          backdropFilter: "blur(8px)",
+          backdropFilter: "blur(4px)",
+          maxWidth: "80%",
+          textAlign: "center",
+          lineHeight: "1.4",
+          transition: "all 0.3s ease",
         }}>
-          <span style={{ fontSize: "16px" }}>🤟</span>
-          {prediction || "..."}
+          {captions.join(" ")}
         </div>
       )}
     </div>

@@ -6,7 +6,7 @@ const handler: PlasmoMessaging.MessageHandler = async (req, res) => {
   // need to explicitly target them.
   await new Promise<void>((resolve) => {
     chrome.runtime.sendMessage(
-      { target: "offscreen", type: "PROCESS_FRAME", imageData: req.body.imageData },
+      { target: "offscreen", type: "PROCESS_FRAME", participantId: req.body.participantId, dataUrl: req.body.dataUrl, width: req.body.width, height: req.body.height },
       (response) => {
         if (chrome.runtime.lastError) {
           console.error("[ASL] Forwarding error:", chrome.runtime.lastError.message);
