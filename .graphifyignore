@@ -1,0 +1,28 @@
+# Virtual Environments
+.venv/
+**/.venv/
+venv/
+**/venv/
+
+# Build and cache directories
+.plasmo/
+**/.plasmo/
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+
+# Large assets and model binaries
+*.onnx
+*.task
+*.wasm
+meet-extension/assets/
+**/meet-extension/assets/
+arabic-sign-language/models/
+**/arabic-sign-language/models/
+models/
+**/models/

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مترجم لغة الإشارة العربية</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 320px;
+      min-height: 400px;
+      font-family: 'Segoe UI', 'Noto Sans Arabic', Arial, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      direction: rtl;
+    }
+
+    /* ── Header ────────────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, #1f6feb 0%, #388bfd 100%);
+      padding: 16px 18px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-icon {
+      width: 36px; height: 36px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .header h1 {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #fff;
+    }
+    .header p { font-size: 11px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+
+    /* ── Status bar ────────────────────────────────────── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: #161b22;
+      border-bottom: 1px solid #21262d;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #3fb950;
+      box-shadow: 0 0 6px #3fb950;
+      flex-shrink: 0;
+    }
+    .status-dot.off { background: #6e7681; box-shadow: none; }
+    #statusText { font-size: 12px; color: #8b949e; }
+
+    /* ── Toggle switch ─────────────────────────────────── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid #21262d;
+    }
+    .toggle-label { font-size: 14px; font-weight: 600; }
+    .switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: #30363d;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      top: 3px; left: 3px;
+      transition: transform 0.2s;
+    }
+    input:checked + .slider { background: #1f6feb; }
+    input:checked + .slider::before { transform: translateX(20px); }
+
+    /* ── Settings ──────────────────────────────────────── */
+    .section { padding: 12px 18px; border-bottom: 1px solid #21262d; }
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #8b949e;
+      margin-bottom: 10px;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .setting-row:last-child { margin-bottom: 0; }
+    label.setting-name { font-size: 13px; color: #c9d1d9; }
+
+    select, input[type="text"], input[type="number"], input[type="range"] {
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #e6edf3;
+      font-size: 12px;
+      padding: 4px 8px;
+      direction: ltr;
+      text-align: left;
+    }
+    select { width: 90px; }
+    input[type="text"]   { width: 160px; }
+    input[type="number"] { width: 64px; }
+    input[type="range"]  { width: 90px; padding: 0; border: none; }
+
+    /* ── Stats ─────────────────────────────────────────── */
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 12px 18px;
+      border-bottom: 1px solid #21262d;
+    }
+    .stat-card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+    .stat-value { font-size: 18px; font-weight: 700; color: #58a6ff; }
+    .stat-key   { font-size: 10px; color: #8b949e; margin-top: 2px; }
+
+    /* ── Actions ───────────────────────────────────────── */
+    .actions { padding: 12px 18px 16px; display: flex; gap: 8px; }
+    .btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #1f6feb; color: #fff; }
+    .btn-danger  { background: #da3633; color: #fff; }
+
+    /* ── Backend URL ────────────────────────────────────── */
+    .url-row { padding: 0 18px 12px; }
+    .url-row label { font-size: 11px; color: #8b949e; display: block; margin-bottom: 4px; }
+    .url-row input { width: 100%; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-icon">🤟</div>
+  <div>
+    <h1>مترجم لغة الإشارة العربية</h1>
+    <p>Arabic Sign Language Translator</p>
+  </div>
+</div>
+
+<!-- Status -->
+<div class="status-bar">
+  <div class="status-dot" id="statusDot"></div>
+  <span id="statusText">جارٍ التحقق من الاتصال…</span>
+</div>
+
+<!-- Master Toggle -->
+<div class="toggle-row">
+  <span class="toggle-label">تفعيل الترجمة</span>
+  <label class="switch">
+    <input type="checkbox" id="enabledToggle" />
+    <span class="slider"></span>
+  </label>
+</div>
+
+<!-- Settings -->
+<div class="section">
+  <div class="section-title">الإعدادات</div>
+
+  <div class="setting-row">
+    <label class="setting-name">معدل الإطارات (FPS)</label>
+    <input type="number" id="targetFps" min="5" max="30" step="1" />
+  </div>
+
+  <div class="setting-row">
+    <label class="setting-name">حجم الخط</label>
+    <select id="fontSize">
+      <option value="16px">صغير</option>
+      <option value="22px" selected>متوسط</option>
+      <option value="28px">كبير</option>
+      <option value="36px">كبير جداً</option>
+    </select>
+  </div>
+
+  <div class="setting-row">
+    <label class="setting-name">شفافية الترجمة</label>
+    <input type="range" id="opacity" min="0.3" max="1" step="0.05" />
+  </div>
+
+  <div class="setting-row">
+    <label class="setting-name">عرض FPS</label>
+    <label class="switch" style="width:36px;height:20px;">
+      <input type="checkbox" id="showFps" />
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="setting-row">
+    <label class="setting-name">عرض الثقة</label>
+    <label class="switch" style="width:36px;height:20px;">
+      <input type="checkbox" id="showConfidence" />
+      <span class="slider"></span>
+    </label>
+  </div>
+</div>
+
+<!-- Backend URL -->
+<div class="url-row">
+  <label>عنوان الخادم (WebSocket)</label>
+  <input type="text" id="backendUrl" placeholder="ws://localhost:8000/ws/" />
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-value" id="statFps">--</div>
+    <div class="stat-key">FPS الحالي</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="statConf">--</div>
+    <div class="stat-key">الثقة</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="statSentences">0</div>
+    <div class="stat-key">الجمل المترجمة</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value" id="statLatency">--</div>
+    <div class="stat-key">زمن الاستجابة (ms)</div>
+  </div>
+</div>
+
+<!-- Actions -->
+<div class="actions">
+  <button class="btn btn-primary" id="saveBtn">💾 حفظ</button>
+  <button class="btn btn-danger"  id="resetBtn">🔄 إعادة ضبط</button>
+</div>
+
+<script>
+"use strict";
+
+const DEFAULTS = {
+  enabled:        true,
+  backendUrl:     "ws://localhost:8000/ws/",
+  targetFps:      15,
+  showFps:        true,
+  showConfidence: true,
+  fontSize:       "22px",
+  opacity:        0.85,
+};
+
+// ── Load stored settings ──────────────────────────────────────────────────
+chrome.storage.sync.get(DEFAULTS, (settings) => {
+  document.getElementById("enabledToggle").checked  = settings.enabled;
+  document.getElementById("targetFps").value         = settings.targetFps;
+  document.getElementById("fontSize").value          = settings.fontSize;
+  document.getElementById("opacity").value           = settings.opacity;
+  document.getElementById("showFps").checked         = settings.showFps;
+  document.getElementById("showConfidence").checked  = settings.showConfidence;
+  document.getElementById("backendUrl").value        = settings.backendUrl;
+});
+
+// ── Check backend connectivity ────────────────────────────────────────────
+async function checkBackend() {
+  const url = document.getElementById("backendUrl").value
+    .replace(/^ws/, "http").replace(/\/ws\/$/, "") + "/health";
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
+    if (res.ok) {
+      setStatus(true, "متصل بالخادم ✓");
+      return;
+    }
+  } catch {}
+  setStatus(false, "الخادم غير متاح");
+}
+
+function setStatus(online, msg) {
+  document.getElementById("statusDot").className  = "status-dot" + (online ? "" : " off");
+  document.getElementById("statusText").textContent = msg;
+}
+
+checkBackend();
+
+// ── Save ──────────────────────────────────────────────────────────────────
+document.getElementById("saveBtn").addEventListener("click", () => {
+  const settings = {
+    enabled:        document.getElementById("enabledToggle").checked,
+    backendUrl:     document.getElementById("backendUrl").value.trim(),
+    targetFps:      parseInt(document.getElementById("targetFps").value, 10),
+    fontSize:       document.getElementById("fontSize").value,
+    opacity:        parseFloat(document.getElementById("opacity").value),
+    showFps:        document.getElementById("showFps").checked,
+    showConfidence: document.getElementById("showConfidence").checked,
+  };
+  chrome.storage.sync.set(settings, () => {
+    document.getElementById("saveBtn").textContent = "✓ تم الحفظ";
+    setTimeout(() => (document.getElementById("saveBtn").textContent = "💾 حفظ"), 1500);
+    checkBackend();
+  });
+});
+
+// ── Reset ─────────────────────────────────────────────────────────────────
+document.getElementById("resetBtn").addEventListener("click", () => {
+  chrome.storage.sync.set(DEFAULTS, () => location.reload());
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+{
+  "labels.json": {
+    "mtime": 1777622689.2687685,
+    "ast_hash": "8a4b392ebbc22b3b74ed0793175d9fd2",
+    "semantic_hash": "8a4b392ebbc22b3b74ed0793175d9fd2"
+  },
+  "meet-extension/package.json": {
+    "mtime": 1778148705.1908271,
+    "ast_hash": "0e89684b59e4412f9b5bed1719c5c9cf",
+    "semantic_hash": "0e89684b59e4412f9b5bed1719c5c9cf"
+  },
+  "meet-extension/scratch/inspect_model.js": {
+    "mtime": 1777695268.8355043,
+    "ast_hash": "56b9633fdc5f2d25ea2a2503a9d24b2e",
+    "semantic_hash": "56b9633fdc5f2d25ea2a2503a9d24b2e"
+  },
+  "meet-extension/src/background.ts": {
+    "mtime": 1777694238.189433,
+    "ast_hash": "aa5a9ddc6c9186075104cafc1ddead05",
+    "semantic_hash": "aa5a9ddc6c9186075104cafc1ddead05"
+  },
+  "meet-extension/src/background/messages/init_offscreen.ts": {
+    "mtime": 1777694413.4298956,
+    "ast_hash": "55e31db5069ee583e92c87aa3424a2cc",
+    "semantic_hash": "55e31db5069ee583e92c87aa3424a2cc"
+  },
+  "meet-extension/src/background/messages/process_frame.ts": {
+    "mtime": 1778408816.1222014,
+    "ast_hash": "ba725a9b4440bb8c8758f9e9f8a5e4af",
+    "semantic_hash": "ba725a9b4440bb8c8758f9e9f8a5e4af"
+  },
+  "meet-extension/src/background/messages/process_sentence.ts": {
+    "mtime": 1783066055.7594724,
+    "ast_hash": "249afec1ff143dd01a4b6a54dc35a7ee",
+    "semantic_hash": "249afec1ff143dd01a4b6a54dc35a7ee"
+  },
+  "meet-extension/src/content.tsx": {
+    "mtime": 1783156086.35388,
+    "ast_hash": "cec32201c53dbb6b0e9f9354fda07502",
+    "semantic_hash": "cec32201c53dbb6b0e9f9354fda07502"
+  },
+  "meet-extension/src/lib/MotionDetector.ts": {
+    "mtime": 1776801537.832917,
+    "ast_hash": "6b4ba68ae3520655c51a92e13a6dde60",
+    "semantic_hash": "6b4ba68ae3520655c51a92e13a6dde60"
+  },
+  "meet-extension/src/lib/ParticipantObserver.ts": {
+    "mtime": 1776800955.8684378,
+    "ast_hash": "1c9e494fbb36c48c0233d194978919bf",
+    "semantic_hash": "1c9e494fbb36c48c0233d194978919bf"
+  },
+  "meet-extension/src/tabs/offscreen.tsx": {
+    "mtime": 1783156396.378713,
+    "ast_hash": "dbebd1598a51d4a932ae5ab9528e5f71",
+    "semantic_hash": "dbebd1598a51d4a932ae5ab9528e5f71"
+  },
+  "meet-extension/test-plasmo/.prettierrc.mjs": {
+    "mtime": 1777693593.9292367,
+    "ast_hash": "1682cac8363cbcfa3bb81009d3a93f49",
+    "semantic_hash": "1682cac8363cbcfa3bb81009d3a93f49"
+  },
+  "meet-extension/test-plasmo/package.json": {
+    "mtime": 1777693593.9339705,
+    "ast_hash": "e8cda324e8e1fb3fabf464555de33f58",
+    "semantic_hash": "e8cda324e8e1fb3fabf464555de33f58"
+  },
+  "meet-extension/test-plasmo/popup.tsx": {
+    "mtime": 1777693593.9339705,
+    "ast_hash": "3550e7cac62da50ba9b22807938c42e7",
+    "semantic_hash": "3550e7cac62da50ba9b22807938c42e7"
+  },
+  "meet-extension/test-plasmo/tsconfig.json": {
+    "mtime": 1777693593.9339705,
+    "ast_hash": "ce462bdea723cb12ac14cb2e9fb04beb",
+    "semantic_hash": "ce462bdea723cb12ac14cb2e9fb04beb"
+  },
+  "meet-extension/tsconfig.json": {
+    "mtime": 1776801128.3035321,
+    "ast_hash": "4a8135523717ad4f313f5d45f53014ce",
+    "semantic_hash": "4a8135523717ad4f313f5d45f53014ce"
+  },
+  ".agents/rules/graphify.md": {
+    "mtime": 1783791893.917644,
+    "ast_hash": "a0e4d192b9e2e17256124dbfc8e24e6a",
+    "semantic_hash": "a0e4d192b9e2e17256124dbfc8e24e6a"
+  },
+  ".agents/workflows/graphify.md": {
+    "mtime": 1783791893.9221997,
+    "ast_hash": "637776aa6f7496d069afe7520c845c8a",
+    "semantic_hash": "637776aa6f7496d069afe7520c845c8a"
+  },
+  "README.md": {
+    "mtime": 1783787284.5030355,
+    "ast_hash": "4e40baef7d43ae2261e7dbfb4161e5cd",
+    "semantic_hash": ""
+  },
+  "backend/requirements.txt": {
+    "mtime": 1777625664.218362,
+    "ast_hash": "5c7ddf9f4bd4de6a7e303e3d11f6f414",
+    "semantic_hash": "5c7ddf9f4bd4de6a7e303e3d11f6f414"
+  },
+  "meet-extension/README.md": {
+    "mtime": 1776800270.0690236,
+    "ast_hash": "88720624c60698ead54b543919ff2366",
+    "semantic_hash": "88720624c60698ead54b543919ff2366"
+  },
+  "meet-extension/src/tabs/offscreen.html": {
+    "mtime": 1777628161.9629278,
+    "ast_hash": "a4f68a82074277b77eb9e9fd6b13e6d9",
+    "semantic_hash": "a4f68a82074277b77eb9e9fd6b13e6d9"
+  },
+  "meet-extension/test-plasmo/.github/workflows/submit.yml": {
+    "mtime": 1776800851.2628303,
+    "ast_hash": "5c2c2bc47728819b3f5094df55e33687",
+    "semantic_hash": "5c2c2bc47728819b3f5094df55e33687"
+  },
+  "meet-extension/test-plasmo/README.md": {
+    "mtime": 1777693593.9292367,
+    "ast_hash": "4db6c27733306a2853635a0dba61e419",
+    "semantic_hash": "4db6c27733306a2853635a0dba61e419"
+  },
+  "project_context.txt": {
+    "mtime": 1777621595.6136422,
+    "ast_hash": "d0ee5b1925403c724cacca3f254a5b57",
+    "semantic_hash": "d0ee5b1925403c724cacca3f254a5b57"
+  },
+  "meet-extension/test-plasmo/assets/icon.png": {
+    "mtime": 1777693593.9339705,
+    "ast_hash": "2b6ab0c80df72811b84e0233a545f394",
+    "semantic_hash": "2b6ab0c80df72811b84e0233a545f394"
+  },
+  "backend/__init__.py": {
+    "mtime": 1783787286.726878,
+    "ast_hash": "f99f970ad68d08c15f86ba68895323dc",
+    "semantic_hash": ""
+  },
+  "backend/app.py": {
+    "mtime": 1783787286.672194,
+    "ast_hash": "75a0bf9d3deb1be88c93924d1cf3e4f4",
+    "semantic_hash": ""
+  },
+  "backend/config.py": {
+    "mtime": 1783787286.6772287,
+    "ast_hash": "671c208e54fc13d718da2ec0fb2ba3f9",
+    "semantic_hash": ""
+  },
+  "backend/inference.py": {
+    "mtime": 1783787286.693527,
+    "ast_hash": "bb6b0c93feda1ff78af87b2e66b962a8",
+    "semantic_hash": ""
+  },
+  "backend/main_simple.py": {
+    "mtime": 1777623227.337762,
+    "ast_hash": "235ebbb949895f0e1a4508fb249dcbb2",
+    "semantic_hash": ""
+  },
+  "backend/nlp.py": {
+    "mtime": 1783787286.7107599,
+    "ast_hash": "effd526e87888ca4187adc76859603a7",
+    "semantic_hash": ""
+  },
+  "backend/run.py": {
+    "mtime": 1783787286.706078,
+    "ast_hash": "20ad61e3baf607bff76f700b25e092e0",
+    "semantic_hash": ""
+  },
+  "extension/background.js": {
+    "mtime": 1783787287.044819,
+    "ast_hash": "cd7c25df30d1e95247d55aa9a8e766fd",
+    "semantic_hash": ""
+  },
+  "extension/content.js": {
+    "mtime": 1783787287.0569625,
+    "ast_hash": "14e78d00877d6b7151af37c5fbaa0a18",
+    "semantic_hash": ""
+  },
+  "extension/manifest.json": {
+    "mtime": 1783787287.0658956,
+    "ast_hash": "528b0225fee89243ff1ba7eb5136c28f",
+    "semantic_hash": ""
+  },
+  "docker-compose.yml": {
+    "mtime": 1783787284.468021,
+    "ast_hash": "7ac6b4ed6d56d596cd46243125473712",
+    "semantic_hash": ""
+  },
+  "docs/README.md": {
+    "mtime": 1783787287.0114567,
+    "ast_hash": "7272f4d5c2751991080ab3756a562548",
+    "semantic_hash": ""
+  },
+  "docs/project_summary.md": {
+    "mtime": 1783787287.010445,
+    "ast_hash": "183cb2f459693c57fce4ca4a13003df2",
+    "semantic_hash": ""
+  },
+  "extension/popup.html": {
+    "mtime": 1783787287.0784044,
+    "ast_hash": "5c04c590d8f40a959442053a9bd03e0d",
+    "semantic_hash": ""
+  },
+  "requirements.txt": {
+    "mtime": 1783794559.3950894,
+    "ast_hash": "ef07cff520c3cecb51fb5616028cbcd0",
+    "semantic_hash": ""
+  }
+}

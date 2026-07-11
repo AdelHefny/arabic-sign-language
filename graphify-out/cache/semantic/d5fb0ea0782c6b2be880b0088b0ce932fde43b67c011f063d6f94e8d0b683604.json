@@ -1,0 +1,1 @@
+{"nodes": [{"id": "model_static_onnx", "label": "Static Classifier (ONNX)", "file_type": "code", "source_file": "arabic-sign-language/models/arabic_sign_model_medium.onnx"}], "edges": [], "hyperedges": []}

@@ -1,0 +1,1 @@
+{"nodes": [{"id": "model_dynamic_onnx", "label": "Dynamic Transformer (ONNX)", "file_type": "code", "source_file": "arabic-sign-language/models/arabic_sign_video_model_large.onnx"}], "edges": [], "hyperedges": []}

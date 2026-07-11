@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  # ── Arabic Sign Language Backend ──────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: arsl-backend:latest
+    container_name: arsl_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - WORKERS=1
+      - LOG_LEVEL=INFO
+      - USE_ARABERT=false
+    volumes:
+      # Mount models dir so you can swap ONNX files without rebuilding
+      - ./models:/app/models:ro
+      # Mount labels file
+      - ./labels.json:/app/labels.json:ro
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout:  5s
+      retries:  3
+      start_period: 10s
+    networks:
+      - arsl_net
+
+  # ── TensorBoard (training monitoring) ─────────────────────────────────────
+  tensorboard:
+    image: tensorflow/tensorflow:2.14.0
+    container_name: arsl_tensorboard
+    restart: unless-stopped
+    command: tensorboard --logdir=/logs --host=0.0.0.0 --port=6006
+    ports:
+      - "6006:6006"
+    volumes:
+      - ./logs:/logs:ro
+    networks:
+      - arsl_net
+    profiles:
+      - training     # only started with: docker compose --profile training up
+
+networks:
+  arsl_net:
+    driver: bridge

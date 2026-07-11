@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Arabic Sign Language Translator",
+  "version": "1.0.0",
+  "description": "Real-time Arabic Sign Language translation overlay for Google Meet",
+
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+
+  "host_permissions": [
+    "https://meet.google.com/*",
+    "http://localhost:8000/*",
+    "ws://localhost:8000/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["https://meet.google.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16":  "icons/icon16.png",
+      "48":  "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["mediapipe/*"],
+      "matches":   ["https://meet.google.com/*"]
+    }
+  ]
+}

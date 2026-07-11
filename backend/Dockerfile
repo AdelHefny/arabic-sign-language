@@ -14,7 +14,7 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the backend code
-COPY backend/main.py .
+COPY backend/main_simple.py .
 
 # Copy the labels file
 COPY labels.json .
@@ -30,4 +30,4 @@ ENV LABELS_PATH=/app/labels.json
 EXPOSE 8000
 
 # Run the FastAPI server
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main_simple:app", "--host", "0.0.0.0", "--port", "8000"]

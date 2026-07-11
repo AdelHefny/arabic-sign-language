@@ -1,0 +1,9 @@
+{
+  "name": "arabic_sign_video_model_medium",
+  "architecture": "temporal_transformer",
+  "num_blocks": 4,
+  "embedding_dim": 256,
+  "num_heads": 8,
+  "sequence_length": 30,
+  "feature_dim": 126
+}
