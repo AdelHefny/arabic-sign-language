@@ -23,6 +23,63 @@ export const getStyle = () => {
 
 import { sendToBackground } from "@plasmohq/messaging"
 
+const drawLandmarks = (canvas: HTMLCanvasElement, video: HTMLVideoElement, landmarksList: any[][]) => {
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return
+
+  const rect = video.getBoundingClientRect()
+  const computedStyle = window.getComputedStyle(video)
+  
+  canvas.style.left = `${rect.left}px`
+  canvas.style.top = `${rect.top}px`
+  canvas.style.width = `${rect.width}px`
+  canvas.style.height = `${rect.height}px`
+  canvas.style.transform = computedStyle.transform
+  canvas.style.transformOrigin = computedStyle.transformOrigin
+
+  if (canvas.width !== rect.width || canvas.height !== rect.height) {
+    canvas.width = rect.width
+    canvas.height = rect.height
+  }
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  if (!landmarksList || landmarksList.length === 0) return
+
+  const connections = [
+    [0, 1], [1, 2], [2, 3], [3, 4],
+    [0, 5], [5, 6], [6, 7], [7, 8],
+    [0, 9], [9, 10], [10, 11], [11, 12],
+    [0, 13], [13, 14], [14, 15], [15, 16],
+    [0, 17], [17, 18], [18, 19], [19, 20],
+    [5, 9], [9, 13], [13, 17]
+  ]
+
+  landmarksList.forEach(landmarks => {
+    // Draw connections
+    ctx.strokeStyle = "#00ffcc"
+    ctx.lineWidth = 3
+    connections.forEach(([i, j]) => {
+      const pt1 = landmarks[i]
+      const pt2 = landmarks[j]
+      if (pt1 && pt2) {
+        ctx.beginPath()
+        ctx.moveTo(pt1.x * canvas.width, pt1.y * canvas.height)
+        ctx.lineTo(pt2.x * canvas.width, pt2.y * canvas.height)
+        ctx.stroke()
+      }
+    })
+
+    // Draw joints
+    ctx.fillStyle = "#ff0055"
+    landmarks.forEach(lm => {
+      ctx.beginPath()
+      ctx.arc(lm.x * canvas.width, lm.y * canvas.height, 5, 0, 2 * Math.PI)
+      ctx.fill()
+    })
+  })
+}
+
 // --- Types ---
 type AppStatus = "loading" | "ready" | "error" | "no_hands" | "buffering"
 
@@ -89,28 +146,63 @@ const StatusBadge = ({ status, detail, bufferProgress, bufferSize }: {
 // --- Main video overlay per participant ---
 const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
   const captureCanvasRef = useRef<HTMLCanvasElement>(null)
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const [captions, setCaptions] = useState<string[]>([])
+  const [finalSentence, setFinalSentence] = useState<string | null>(null)
   const [status, setStatus] = useState<AppStatus>("loading")
   const [statusDetail, setStatusDetail] = useState("Initializing...")
   const [bufferProgress, setBufferProgress] = useState(0)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const wordLimitRef = useRef(Math.floor(Math.random() * 5) + 6) // Random between 6 and 10
+  const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const predictionSequenceRef = useRef<any[]>([])
   const BUFFER_SIZE = 30
   const participantId = useRef(Math.random().toString(36).slice(2)).current
+  const isLocal = process.env.PLASMO_PUBLIC_SHOW_LANDMARKS === "true" || process.env.NODE_ENV === "development"
 
-  const updatePrediction = (text: string) => {
+  const processSentence = async () => {
+    if (predictionSequenceRef.current.length === 0) return
+    const sequence = [...predictionSequenceRef.current]
+    predictionSequenceRef.current = [] // Clear buffer
+    
+    try {
+      const response = await sendToBackground({
+        name: "process_sentence",
+        body: { sequence }
+      })
+      if (response && response.sentence) {
+        setFinalSentence(response.sentence)
+        setCaptions([]) // Clear raw captions
+        
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        timeoutRef.current = setTimeout(() => {
+          setFinalSentence(null)
+        }, 5000)
+      }
+    } catch (err) {
+      console.error("[ASL] Error processing sentence:", err)
+    }
+  }
+
+  const updatePrediction = (text: string, top5: any[]) => {
+    predictionSequenceRef.current.push(top5)
+    
     setCaptions(prev => {
       const newCaptions = [...prev, text]
-      if (newCaptions.length > wordLimitRef.current) {
-        return newCaptions.slice(newCaptions.length - wordLimitRef.current)
-      }
+      if (newCaptions.length > 10) return newCaptions.slice(newCaptions.length - 10)
       return newCaptions
     })
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    timeoutRef.current = setTimeout(() => {
-      setCaptions([])
-      wordLimitRef.current = Math.floor(Math.random() * 5) + 6
-    }, 5000)
+    
+    if (finalSentence) setFinalSentence(null)
+
+    if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current)
+    pauseTimeoutRef.current = setTimeout(() => {
+      processSentence()
+    }, 1500) // 1.5 seconds pause triggers generation
+
+    if (predictionSequenceRef.current.length >= 15) {
+      if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current)
+      processSentence()
+    }
   }
 
   useEffect(() => {
@@ -191,8 +283,17 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
             setStatusDetail("ASL Translator active")
           }
 
-          if (response.gesture) {
-            updatePrediction(response.gesture)
+          if (response.gesture && response.top5) {
+            updatePrediction(response.gesture, response.top5)
+          } else if (!response.handsDetected) {
+            if (predictionSequenceRef.current.length > 0) {
+               if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current)
+               processSentence()
+            }
+          }
+
+          if (isLocal && overlayCanvasRef.current) {
+            drawLandmarks(overlayCanvasRef.current, video, response.landmarks || [])
           }
 
           // Target ~30 FPS for smoother visual tracking
@@ -226,23 +327,33 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
       pointerEvents: "none",
       zIndex: 2147483647
     }}>
+      {isLocal && (
+        <canvas
+          ref={overlayCanvasRef}
+          style={{
+            position: "absolute",
+            pointerEvents: "none",
+            zIndex: 2147483646,
+          }}
+        />
+      )}
       {/* Canvas removed as requested */}
       {/* Status Badge Removed as requested */}
 
       {/* Prediction Result - Movie Captions Style */}
-      {captions.length > 0 && (
+      {(captions.length > 0 || finalSentence) && (
         <div style={{
           position: "absolute",
           bottom: "10%",
           left: "50%",
           transform: "translateX(-50%)",
-          background: "rgba(0, 0, 0, 0.75)",
-          color: "#f8f9fa",
+          background: finalSentence ? "rgba(20, 20, 20, 0.9)" : "rgba(0, 0, 0, 0.6)",
+          color: finalSentence ? "#4ade80" : "#f8f9fa",
           padding: "16px 32px",
           borderRadius: "12px",
           fontSize: "32px",
           fontFamily: "system-ui, -apple-system, sans-serif",
-          fontWeight: "700",
+          fontWeight: finalSentence ? "800" : "600",
           textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)",
           zIndex: 2147483647,
           direction: "rtl",
@@ -251,8 +362,9 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
           textAlign: "center",
           lineHeight: "1.4",
           transition: "all 0.3s ease",
+          border: finalSentence ? "1px solid rgba(74, 222, 128, 0.3)" : "none",
         }}>
-          {captions.join(" ")}
+          {finalSentence ? finalSentence : captions.join(" ")}
         </div>
       )}
     </div>
