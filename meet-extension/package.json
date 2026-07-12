@@ -5,9 +5,13 @@
   "description": "ASL Translator for Google Meet using MediaPipe and Fingerpose",
   "author": "Adel Hefny",
   "scripts": {
+    "sync-assets": "xcopy /Y /I /E assets\\tasks-vision-wasm build\\chrome-mv3-dev\\assets\\tasks-vision-wasm\\ && copy /Y assets\\holistic_landmarker.task build\\chrome-mv3-dev\\assets\\holistic_landmarker.task",
     "dev": "plasmo dev",
     "build": "plasmo build",
-    "package": "plasmo package"
+    "package": "plasmo package",
+    "dev:edge": "plasmo dev --target=edge-mv3",
+    "build:edge": "plasmo build --target=edge-mv3",
+    "package:edge": "plasmo package --target=edge-mv3"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "latest",
@@ -25,6 +29,7 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "prettier": "latest",
+    "svgo": "^3.3.4",
     "typescript": "latest"
   },
   "manifest": {

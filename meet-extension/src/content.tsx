@@ -23,62 +23,7 @@ export const getStyle = () => {
 
 import { sendToBackground } from "@plasmohq/messaging"
 
-const drawLandmarks = (canvas: HTMLCanvasElement, video: HTMLVideoElement, landmarksList: any[][]) => {
-  const ctx = canvas.getContext("2d")
-  if (!ctx) return
 
-  const rect = video.getBoundingClientRect()
-  const computedStyle = window.getComputedStyle(video)
-  
-  canvas.style.left = `${rect.left}px`
-  canvas.style.top = `${rect.top}px`
-  canvas.style.width = `${rect.width}px`
-  canvas.style.height = `${rect.height}px`
-  canvas.style.transform = computedStyle.transform
-  canvas.style.transformOrigin = computedStyle.transformOrigin
-
-  if (canvas.width !== rect.width || canvas.height !== rect.height) {
-    canvas.width = rect.width
-    canvas.height = rect.height
-  }
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height)
-
-  if (!landmarksList || landmarksList.length === 0) return
-
-  const connections = [
-    [0, 1], [1, 2], [2, 3], [3, 4],
-    [0, 5], [5, 6], [6, 7], [7, 8],
-    [0, 9], [9, 10], [10, 11], [11, 12],
-    [0, 13], [13, 14], [14, 15], [15, 16],
-    [0, 17], [17, 18], [18, 19], [19, 20],
-    [5, 9], [9, 13], [13, 17]
-  ]
-
-  landmarksList.forEach(landmarks => {
-    // Draw connections
-    ctx.strokeStyle = "#00ffcc"
-    ctx.lineWidth = 3
-    connections.forEach(([i, j]) => {
-      const pt1 = landmarks[i]
-      const pt2 = landmarks[j]
-      if (pt1 && pt2) {
-        ctx.beginPath()
-        ctx.moveTo(pt1.x * canvas.width, pt1.y * canvas.height)
-        ctx.lineTo(pt2.x * canvas.width, pt2.y * canvas.height)
-        ctx.stroke()
-      }
-    })
-
-    // Draw joints
-    ctx.fillStyle = "#ff0055"
-    landmarks.forEach(lm => {
-      ctx.beginPath()
-      ctx.arc(lm.x * canvas.width, lm.y * canvas.height, 5, 0, 2 * Math.PI)
-      ctx.fill()
-    })
-  })
-}
 
 // --- Types ---
 type AppStatus = "loading" | "ready" | "error" | "no_hands" | "buffering"
@@ -146,7 +91,6 @@ const StatusBadge = ({ status, detail, bufferProgress, bufferSize }: {
 // --- Main video overlay per participant ---
 const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
   const captureCanvasRef = useRef<HTMLCanvasElement>(null)
-  const overlayCanvasRef = useRef<HTMLCanvasElement>(null)
   const [captions, setCaptions] = useState<string[]>([])
   const [finalSentence, setFinalSentence] = useState<string | null>(null)
   const [status, setStatus] = useState<AppStatus>("loading")
@@ -157,7 +101,6 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
   const predictionSequenceRef = useRef<any[]>([])
   const BUFFER_SIZE = 30
   const participantId = useRef(Math.random().toString(36).slice(2)).current
-  const isLocal = process.env.PLASMO_PUBLIC_SHOW_LANDMARKS === "true" || process.env.NODE_ENV === "development"
 
   const processSentence = async () => {
     if (predictionSequenceRef.current.length === 0) return
@@ -292,18 +235,24 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
             }
           }
 
-          if (isLocal && overlayCanvasRef.current) {
-            drawLandmarks(overlayCanvasRef.current, video, response.landmarks || [])
-          }
-
           // Target ~30 FPS for smoother visual tracking
           setTimeout(processFrame, 33)
         } catch (ipcErr: any) {
           if (!active) return
+          // Extension was reloaded — stop the loop permanently to avoid infinite errors
+          if (ipcErr?.message?.includes("Extension context invalidated")) {
+            active = false
+            return
+          }
           console.error("[ASL] sendToBackground error:", ipcErr)
           setTimeout(processFrame, 500)
         }
-      } catch (e) {
+      } catch (e: any) {
+        if (!active) return
+        if (e?.message?.includes("Extension context invalidated")) {
+          active = false
+          return
+        }
         console.error("Capture error:", e)
         setStatus("error")
         setStatusDetail("Capture failed")
@@ -327,17 +276,6 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
       pointerEvents: "none",
       zIndex: 2147483647
     }}>
-      {isLocal && (
-        <canvas
-          ref={overlayCanvasRef}
-          style={{
-            position: "absolute",
-            pointerEvents: "none",
-            zIndex: 2147483646,
-          }}
-        />
-      )}
-      {/* Canvas removed as requested */}
       {/* Status Badge Removed as requested */}
 
       {/* Prediction Result - Movie Captions Style */}
