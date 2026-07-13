@@ -165,15 +165,14 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
         return
       }
 
-      // Reduce resolution for performance. MediaPipe doesn't need 640x480 for detection.
-      // 320x240 is 4x less data and still very accurate for landmarks.
-      if (captureCanvas.width !== 320) {
-        captureCanvas.width = 320
-        captureCanvas.height = 240
+      // Match training resolution (640x480) to avoid tracking jitter and coordinate quantization noise.
+      if (captureCanvas.width !== 640) {
+        captureCanvas.width = 640
+        captureCanvas.height = 480
       }
 
       try {
-        captureCtx.drawImage(video, 0, 0, 320, 240)
+        captureCtx.drawImage(video, 0, 0, 640, 480)
         
         // Use JPEG string instead of raw array. 
         // Array.from() + JSON serialization of 1.2M elements was the bottleneck.
@@ -186,8 +185,8 @@ const VideoOverlay = ({ video }: { video: HTMLVideoElement }) => {
             body: {
               participantId,
               dataUrl,
-              width: 320,
-              height: 240
+              width: 640,
+              height: 480
             }
           })
 

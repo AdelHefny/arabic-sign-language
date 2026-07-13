@@ -85,36 +85,65 @@ init()
  *
  * Missing landmarks are zero-padded (zeros after normalization = at origin).
  */
-function extractHolisticFeatures(result: any): number[] {
-  // In MediaPipe 0.10.x, all landmark fields are NormalizedLandmark[][]
-  // (array of detections). We take [0] for the first (and only) detected person/hand.
+let lastKnownPose = new Map<string, [number, number, number][]>()
+let lastKnownLH = new Map<string, [number, number, number][]>()
+let lastKnownRH = new Map<string, [number, number, number][]>()
+let missingPoseCounts = new Map<string, number>()
+let missingLHCounts = new Map<string, number>()
+let missingRHCounts = new Map<string, number>()
 
-  // --- Pose landmarks (33 × 3) ---
-  let poseArr: [number, number, number][] = Array.from({ length: 33 }, () => [0, 0, 0])
-  const poseLms = result.poseLandmarks?.[0]   // first detected pose
+function extractHolisticFeatures(result: any, pId: string): number[] {
+  // --- Pose ---
+  const poseLms = result.poseLandmarks?.[0]
+  let poseMissingCount = missingPoseCounts.get(pId) || 0
+
   if (poseLms && poseLms.length > 0) {
-    poseArr = poseLms.map((lm: any) => [lm.x, lm.y, lm.z] as [number, number, number])
+    const arr = poseLms.map((lm: any) => [lm.x, lm.y, lm.z] as [number, number, number])
+    while (arr.length < 33) arr.push([0, 0, 0])
+    lastKnownPose.set(pId, arr)
+    poseMissingCount = 0
+  } else {
+    poseMissingCount++
   }
+  missingPoseCounts.set(pId, poseMissingCount)
 
-  // --- Left hand (21 × 3) — direct from holistic, not by handedness label ---
-  let lhArr: [number, number, number][] = Array.from({ length: 21 }, () => [0, 0, 0])
-  const lhLms = result.leftHandLandmarks?.[0]  // first detected left hand
+  // If pose is missing and we have no history, or it's been missing for >= 5 frames
+  if (poseMissingCount >= 5 || !lastKnownPose.has(pId)) {
+    return new Array(FEATURES_PER_FRAME).fill(1.0)
+  }
+  const poseArr = lastKnownPose.get(pId)!
+
+  // --- Left Hand ---
+  const lhLms = result.leftHandLandmarks?.[0]
+  let lhMissingCount = missingLHCounts.get(pId) || 0
+
   if (lhLms && lhLms.length > 0) {
-    lhArr = lhLms.map((lm: any) => [lm.x, lm.y, lm.z] as [number, number, number])
+    const arr = lhLms.map((lm: any) => [lm.x, lm.y, lm.z] as [number, number, number])
+    while (arr.length < 21) arr.push([0, 0, 0])
+    lastKnownLH.set(pId, arr)
+    lhMissingCount = 0
+  } else {
+    lhMissingCount++
   }
+  missingLHCounts.set(pId, lhMissingCount)
 
-  // --- Right hand (21 × 3) ---
-  let rhArr: [number, number, number][] = Array.from({ length: 21 }, () => [0, 0, 0])
-  const rhLms = result.rightHandLandmarks?.[0] // first detected right hand
+  // --- Right Hand ---
+  const rhLms = result.rightHandLandmarks?.[0]
+  let rhMissingCount = missingRHCounts.get(pId) || 0
+
   if (rhLms && rhLms.length > 0) {
-    rhArr = rhLms.map((lm: any) => [lm.x, lm.y, lm.z] as [number, number, number])
+    const arr = rhLms.map((lm: any) => [lm.x, lm.y, lm.z] as [number, number, number])
+    while (arr.length < 21) arr.push([0, 0, 0])
+    lastKnownRH.set(pId, arr)
+    rhMissingCount = 0
+  } else {
+    rhMissingCount++
   }
-  // Ensure poseArr always has exactly 33 elements (pad with zeros if partial)
-  while (poseArr.length < 33) poseArr.push([0, 0, 0])
+  missingRHCounts.set(pId, rhMissingCount)
 
-  // --- Shoulder normalization (matches training's interpolate_and_normalize) ---
-  const ls = poseArr[11] ?? [0, 0, 0]  // left shoulder  (safe fallback)
-  const rs = poseArr[12] ?? [0, 0, 0]  // right shoulder (safe fallback)
+  // Calculate shoulder parameters from poseArr
+  const ls = poseArr[11] || [0, 0, 0]
+  const rs = poseArr[12] || [0, 0, 0]
   const mid = [
     (ls[0] + rs[0]) / 2,
     (ls[1] + rs[1]) / 2,
@@ -126,14 +155,26 @@ function extractHolisticFeatures(result: any): number[] {
     Math.pow(ls[2] - rs[2], 2)
   ) || 1e-6
 
+  // Normalization helper
   const normalize = ([x, y, z]: [number, number, number]) => [
     (x - mid[0]) / shoulderWidth,
     (y - mid[1]) / shoulderWidth,
     (z - mid[2]) / shoulderWidth
   ]
 
-  const allLandmarks = [...poseArr, ...lhArr, ...rhArr]
-  return allLandmarks.flatMap(normalize)
+  // Normalize pose features
+  const normalizedPose = poseArr.flatMap(normalize)
+
+  // Normalize hands. If missing >= 5 frames or no history, use 1.0
+  const normalizedLH = (lhMissingCount >= 5 || !lastKnownLH.has(pId)) 
+    ? new Array(21 * 3).fill(1.0) 
+    : lastKnownLH.get(pId)!.flatMap(normalize)
+
+  const normalizedRH = (rhMissingCount >= 5 || !lastKnownRH.has(pId)) 
+    ? new Array(21 * 3).fill(1.0) 
+    : lastKnownRH.get(pId)!.flatMap(normalize)
+
+  return [...normalizedPose, ...normalizedLH, ...normalizedRH]
 }
 
 async function runInference(buffer: number[][]): Promise<{ word: string, prob: number }[]> {
@@ -160,10 +201,8 @@ async function runInference(buffer: number[][]): Promise<{ word: string, prob: n
 let emptyFrameCounts = new Map<string, number>()
 
 async function triggerSegmentationInference(buffer: number[][], pId: string): Promise<{ gesture: string, top5: any[] } | null> {
-  const activeFrames = buffer.filter(frame => frame.some(val => val !== 0)).length
+  const activeFrames = buffer.filter(frame => frame.some(val => val !== 0 && val !== 1.0)).length
   if (activeFrames < 6) {
-    buffer.length = 0
-    emptyFrameCounts.set(pId, 0)
     return null
   }
 
@@ -172,21 +211,15 @@ async function triggerSegmentationInference(buffer: number[][], pId: string): Pr
     finalBuffer = [...buffer]
     const padCount = WINDOW_SIZE - buffer.length
     for (let i = 0; i < padCount; i++) {
-      finalBuffer.push(new Array(FEATURES_PER_FRAME).fill(0))
-    }
-  } else if (buffer.length > WINDOW_SIZE) {
-    for (let i = 0; i < WINDOW_SIZE; i++) {
-      const idx = Math.floor((i * buffer.length) / WINDOW_SIZE)
-      finalBuffer.push(buffer[idx])
+      finalBuffer.push(new Array(FEATURES_PER_FRAME).fill(1.0))
     }
   } else {
-    finalBuffer = buffer
+    // Sliding window logic: simply take the last 30 frames
+    finalBuffer = buffer.slice(-WINDOW_SIZE)
   }
 
   try {
     const predictions = await runInference(finalBuffer)
-    buffer.length = 0
-    emptyFrameCounts.set(pId, 0)
 
     if (predictions && predictions.length > 0) {
       const topPrediction = predictions[0]
@@ -201,8 +234,6 @@ async function triggerSegmentationInference(buffer: number[][], pId: string): Pr
     }
   } catch (err) {
     console.error("[ASL] Inference error in segmentation:", err)
-    buffer.length = 0
-    emptyFrameCounts.set(pId, 0)
   }
   return null
 }
@@ -222,9 +253,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   ; (async () => {
     try {
-      const { dataUrl } = message
       const pId = message.participantId || "default"
+      const now = Date.now()
+      const lastUpdate = lastBufferUpdate.get(pId) || 0
 
+      // 1. CHECK TIME FIRST to save CPU/GPU overhead
+      if (now - lastUpdate < 60) {
+        sendResponse({ status: "skipped_frame" })
+        return
+      }
+      
+      // Update timer
+      lastBufferUpdate.set(pId, now)
+
+      // 2. DO THE HEAVY LIFTING ONLY IF FRAME IS NOT SKIPPED
+      const { dataUrl } = message
       const img = new Image()
       await new Promise((resolve, reject) => {
         img.onload = resolve
@@ -233,19 +276,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
 
       // VIDEO mode requires strictly increasing timestamps
-      videoTimestamp += 33
+      videoTimestamp += 66
       const result = holisticLandmarker!.detectForVideo(img, videoTimestamp)
 
-      const features = extractHolisticFeatures(result)
-      const now = Date.now()
-      const lastUpdate = lastBufferUpdate.get(pId) || 0
-
-      // ~15 FPS to match training (every-other-frame at 30fps = 66ms)
-      let shouldPush = false
-      if (now - lastUpdate >= 60) {
-        shouldPush = true
-        lastBufferUpdate.set(pId, now)
-      }
+      const features = extractHolisticFeatures(result, pId)
 
       let responseGesture: string | null = null
       let responseTop5: any[] | null = null
@@ -254,43 +288,54 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const handsDetected = (result.leftHandLandmarks?.[0] && result.leftHandLandmarks[0].length > 0) ||
         (result.rightHandLandmarks?.[0] && result.rightHandLandmarks[0].length > 0)
 
-      if (shouldPush) {
-        if (!frameBuffers.has(pId)) frameBuffers.set(pId, [])
-        const buffer = frameBuffers.get(pId)!
-        const emptyCount = emptyFrameCounts.get(pId) || 0
+      if (!frameBuffers.has(pId)) frameBuffers.set(pId, [])
+      const buffer = frameBuffers.get(pId)!
+      const emptyCount = emptyFrameCounts.get(pId) || 0
 
-        if (handsDetected) {
+      if (handsDetected) {
+        buffer.push(features)
+        emptyFrameCounts.set(pId, 0)
+
+        if (buffer.length > 45) buffer.shift()
+
+        if (buffer.length >= 45) {
+          const prediction = await triggerSegmentationInference(buffer, pId)
+          if (prediction) {
+            responseGesture = prediction.gesture
+            responseTop5 = prediction.top5
+          }
+        }
+      } else {
+        if (buffer.length > 0) {
+          const newEmptyCount = emptyCount + 1
+          emptyFrameCounts.set(pId, newEmptyCount)
           buffer.push(features)
-          emptyFrameCounts.set(pId, 0)
 
-          if (buffer.length >= 45) {
+          if (buffer.length > 45) buffer.shift()
+
+          if (newEmptyCount >= 5) {
             const prediction = await triggerSegmentationInference(buffer, pId)
             if (prediction) {
               responseGesture = prediction.gesture
               responseTop5 = prediction.top5
             }
-          }
-        } else {
-          if (buffer.length > 0) {
-            const newEmptyCount = emptyCount + 1
-            emptyFrameCounts.set(pId, newEmptyCount)
-            buffer.push(features)
-
-            if (newEmptyCount >= 5) {
-              const prediction = await triggerSegmentationInference(buffer, pId)
-              if (prediction) {
-                responseGesture = prediction.gesture
-                responseTop5 = prediction.top5
-              }
-            }
+            // Wipe out the history on a long pause
+            buffer.length = 0
+            emptyFrameCounts.set(pId, 0)
+            lastKnownPose.delete(pId)
+            lastKnownLH.delete(pId)
+            lastKnownRH.delete(pId)
+            missingPoseCounts.set(pId, 0)
+            missingLHCounts.set(pId, 0)
+            missingRHCounts.set(pId, 0)
           }
         }
       }
 
-      const buffer = frameBuffers.get(pId) || []
+      const bufferRef = frameBuffers.get(pId) || []
       const response: any = {
         handsDetected,
-        bufferProgress: buffer.length,
+        bufferProgress: bufferRef.length,
         bufferSize: WINDOW_SIZE,
       }
       if (responseGesture && responseTop5) {
